@@ -366,6 +366,7 @@ function webform_components_form_add_submit($form, &$form_state) {
 function webform_component_edit_form($form, $form_state, $node, $component, $clone = FALSE) {
   drupal_set_title(t('Edit component: @name', array('@name' => $component['name'])), PASS_THROUGH);
 
+  $form['#node'] = $node;
   $form['#attached']['library'][] = array('webform', 'admin');
   $form['#tree'] = TRUE;
 
@@ -582,7 +583,8 @@ function webform_component_edit_form($form, $form_state, $node, $component, $clo
   );
 
   // Remove fieldsets without any child form controls.
-  foreach ($form as $group_key => $group) {
+  foreach (element_children($form) as $group_key) {
+    $group = $form[$group_key];
     if (isset($group['#type']) && $group['#type'] === 'fieldset' && !element_children($group)) {
       unset($form[$group_key]);
     }
@@ -595,7 +597,7 @@ function webform_component_edit_form($form, $form_state, $node, $component, $clo
  * Field name validation for the webform unique key. Must be alphanumeric.
  */
 function webform_component_edit_form_validate($form, &$form_state) {
-  $node = node_load($form_state['values']['nid']);
+  $node = $form['#node'];;
 
   if (!preg_match('/^[a-z0-9_]+$/i', $form_state['values']['form_key'])) {
     form_set_error('form_key', t('The field key %field_key is invalid. Please include only lowercase alphanumeric characters and underscores.', array('%field_key' => $form_state['values']['form_key'])));
@@ -613,7 +615,7 @@ function webform_component_edit_form_validate($form, &$form_state) {
  */
 function webform_component_edit_form_submit($form, &$form_state) {
   // Ensure a webform record exists.
-  $node = node_load($form_state['values']['nid']);
+  $node = $form['#node'];
   webform_ensure_record($node);
 
   // Remove extra values that match the default.
@@ -906,6 +908,7 @@ function webform_component_clone(&$node, &$component) {
 function webform_component_feature($type, $feature) {
   $components = webform_components();
   $defaults = array(
+    'analysis' => TRUE,
     'csv' => TRUE,
     'default_value' => TRUE,
     'description' => TRUE,
@@ -1025,6 +1028,7 @@ function webform_component_select($element) {
   $element['#attached'] = array(
     'library' => array(
       array('webform', 'admin'),
+      array('system', 'drupal.collapse'),
     ),
     'js' => array(
       'misc/tableselect.js' => array(),
@@ -1065,7 +1069,7 @@ function theme_webform_component_select($variables) {
     $element['#children'] = t('No available components.');
   }
   else {
-    $element['#children'] = '<div class="webform-component-select-wrapper">' . theme('table', array('header' => $header, 'rows' => $rows)) . '</div>';
+    $element['#children'] = '<div class="webform-component-select-wrapper">' . theme('table', array('header' => $header, 'rows' => $rows, 'sticky' => FALSE)) . '</div>';
   }
 
   return theme('fieldset', array('element' => $element));
