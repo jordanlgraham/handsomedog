@@ -211,6 +211,6 @@
 <?php endif; ?>
   
 <div id="copyright" class="container">
- <div class="credit"><?php print t('Copyright'); ?> &copy; <?php echo date("Y"); ?>, <?php print $site_name; ?> <br/> </div>
+ <div class="credit"><?php print t('Copyright'); ?> &copy; <?php echo date("Y"); ?> <?php print '<a href="' . $GLOBALS['base_url'] . '">' . $site_name . '</a>'; ?> <br/></div>
   <div class="clear"></div>
 </div>

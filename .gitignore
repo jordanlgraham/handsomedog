@@ -4,3 +4,10 @@ sites/*/settings*.php
 # Ignore paths that contain user-generated content.
 sites/*/files
 sites/*/private
+
+# Ignore Drupal root's .htaccess, as it differs between environments
+.htaccess
+
+# Ignore Apple's litter
+.DS_Store
+*/.DS_Store
