@@ -5,9 +5,6 @@ sites/*/settings*.php
 sites/*/files
 sites/*/private
 
-# Ignore Drupal root's .htaccess, as it differs between environments
-.htaccess
-
 # Ignore Apple's litter
 .DS_Store
 */.DS_Store
