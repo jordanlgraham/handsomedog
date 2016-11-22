@@ -1,0 +1,440 @@
+<?php
+
+/**
+ * @file
+ * Misery module.
+ * Makes life miserable for users.
+ *
+ */
+
+/**
+ * Implements hook_permission().
+ */
+function misery_permission() {
+  return array(
+    'administer misery' => array(
+      'title' => t('Administer misery'),
+      'description' => t('Perform administration tasks for the misery module.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function misery_menu() {
+  $items = array();
+  $items['admin/people/misery'] = array(
+    'title' => 'Misery',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('misery_admin_form'),
+    'access arguments' => array('administer misery'),
+    'type' => MENU_LOCAL_TASK,
+    'description' => 'Configure how misery works.',
+  );
+  return $items;
+}
+
+/**
+ * Form builder function for misery admin form.
+ */
+function misery_admin_form($form, $form_state) {
+
+  $handlers = misery_get_handlers();
+
+  $form['description'] = array(
+    '#type' => 'markup',
+    '#value' => t('
+      The <em>Chance (%)</em> for each misery operation will control how frequently
+      the user will experience this problem.  0% turns the function off, whereas
+      100% makes it persistent.'),
+    );
+
+  foreach ($handlers as $handler => $handler_data) {
+    $default_chance = variable_get('misery_' . $handler . '_chance', $handler_data['#default_chance']);
+    $form[$handler] = array(
+      '#type' => 'fieldset',
+      '#title' => t('!handler', array('!handler' => $handler_data['#display'])),
+      '#collapsible' => TRUE,
+      '#collapsed' => !$default_chance,
+      '#description' => $handler_data['#description'],
+    );
+    $form[$handler]['misery_' . $handler . '_chance'] = array(
+      '#type' => 'textfield',
+      '#title' => $handler_data['#display'],
+      '#default_value' => $default_chance,
+      '#field_prefix' => t('Chance') . ': ',
+      '#field_suffix' => '% (per page load)',
+      '#size' => 3,
+      '#maxlength' => 5,
+      '#required' => TRUE,
+    );
+    $handler_configuration_form = module_invoke($handler_data['#module'], 'misery_handler_configuration_form', $handler);
+    if ($handler_configuration_form) {
+      $form[$handler]['configuration'] = $handler_configuration_form + array(
+        '#type' => 'fieldset',
+        '#title' => t('!handler configuration', array('!handler' => $handler_data['#display'])),
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+      );
+    }
+  }
+
+  return system_settings_form($form);
+}
+
+/**
+ * Get a list of misery types.
+ */
+function misery_get_handlers() {
+  static $handlers;
+  if (empty($handlers)) {
+    $handlers = module_invoke_all('misery_handlers');
+  }
+  return $handlers;
+
+}
+
+/**
+ * Implements hook_misery_handlers().
+ */
+function misery_misery_handlers() {
+  return array(
+    'delay' => array(
+      '#type' => 'init',
+      '#default_chance' => 0,
+      '#display' => t('Delay'),
+      '#module' => 'misery',
+      '#description' => t('Create a random-length delay, giving the appearance of a slow connection. Use this misery with caution if a user was truly malicious and a troll, they could take advantage to rapidly request web resources and exhaust all available threads taking your site temporarily offline. See !url.', array('!url' => l('Dos attack', 'http://en.wikipedia.org/wiki/Denial-of-service_attack'))),
+    ),
+    'white_screen' => array(
+      '#type' => 'init',
+      '#default_chance' => 10,
+      '#display' => t('White screen'),
+      '#module' => 'misery',
+      '#description' => t('Present the user with a white-screen.'),
+    ),
+    'wrong_page' => array(
+      '#type' => 'init',
+      '#default_chance' => 0,
+      '#display' => t('Wrong page'),
+      '#module' => 'misery',
+      '#description' => t('Redirect to a random URL in a predefined list.'),
+    ),
+    'random_node' => array(
+      '#type' => 'init',
+      '#default_chance' => 10,
+      '#display' => t('Random node'),
+      '#module' => 'misery',
+      '#description' => t('Redirect to a random node accessible by the user.'),
+    ),
+    'access_denied' => array(
+      '#type' => 'init',
+      '#default_chance' => 10,
+      '#display' => t('403 Access denied'),
+      '#module' => 'misery',
+      '#description' => t('Present the user with an <em>Access denied</em> error.'),
+    ),
+    'not_found' => array(
+      '#type' => 'init',
+      '#default_chance' => 10,
+      '#display' => t('404 Not found'),
+      '#module' => 'misery',
+      '#description' => t('Present the user with a <em>Not found</em> error.'),
+    ),
+    'site_offline' => array(
+      '#type' => 'init',
+      '#default_chance' => 5,
+      '#display' => t('503 Site offline'),
+      '#module' => 'misery',
+      '#description' => t('Present the user with a <em>site is under maintenance</em> page.'),
+    ),
+    'form_submit' => array(
+      '#type' => 'form_validate',
+      '#default_chance' => 60,
+      '#display' => t("Forms don't submit"),
+      '#module' => 'misery',
+      '#description' => t('Redirect back to the form during validation to prevent submission.'),
+    ),
+    'crash_ie6' => array(
+      '#type' => 'init',
+      '#default_chance' => 0,
+      '#display' => t('Crash IE6'),
+      '#module' => 'misery',
+      '#description' => t('If the user is using Internet Explorer 6, this will crash their browser.'),
+    ),
+    'spam' => array(
+      '#type' => 'node_view',
+      '#default_chance' => 10,
+      '#display' => t('Spam'),
+      '#module' => 'misery',
+      '#description' => t('Replace all words in the node content with another word.'),
+    ),
+    'logout' => array(
+      '#type' => 'init',
+      '#default_chance' => 10,
+      '#display' => t('Logout'),
+      '#module' => 'misery',
+      '#description' => t('Log the user out.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_misery_handler_configuration_form().
+ */
+function misery_misery_handler_configuration_form($handler) {
+  switch ($handler) {
+    case 'delay':
+      return array(
+        'misery_delay_min' => array(
+          '#type' => 'textfield',
+          '#title' => t('Min Delay'),
+          '#default_value' => variable_get('misery_delay_min', 0),
+          '#field_suffix' => t('seconds'),
+          '#size' => 3,
+          '#maxlength' => 5,
+          '#required' => TRUE,
+        ),
+        'misery_delay_max' => array(
+          '#type' => 'textfield',
+          '#title' => t('Max Delay'),
+          '#default_value' => variable_get('misery_delay_max', 5),
+          '#field_suffix' => t('seconds'),
+          '#size' => 3,
+          '#maxlength' => 5,
+          '#required' => TRUE,
+        ),
+        '#description' => t('The delay will be a random time between these two values.'),
+      );
+      break;
+    case 'wrong_page':
+      return array(
+        'misery_wrong_page_list' => array(
+          '#type' => 'textarea',
+          '#title' => t('List of URLs'),
+          '#default_value' => variable_get('misery_wrong_page_list', ''),
+          '#description' => t('One path or URL per line.'),
+        ),
+      );
+      break;
+    case 'spam':
+      return array(
+        'misery_spam_text' => array(
+          '#type' => 'textfield',
+          '#title' => t('Word'),
+          '#default_value' => variable_get('misery_spam_text', 'Spam'),
+          '#description' => t('Enter a word to spam users with.'),
+        ),
+      );
+      break;
+  }
+}
+
+/**
+ * Implements hook_init().
+ */
+function misery_init() {
+  misery('init');
+}
+
+/**
+ * Implements hook_node_view().
+ */
+function misery_node_view($node, $view_mode, $langcode) {
+  $params['node'] = &$node;
+  $params['view_mode'] = &$view_mode;
+  $params['langcode'] = &$langcode;
+  misery('node_view', $params);
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function misery_form_alter(&$form, $form_state, $form_id) {
+  $form['#validate'][] = 'misery_form_validate';
+}
+
+/**
+ * Validate function for misery forms.
+ */
+function misery_form_validate($form, &$form_state) {
+  $params['form'] = &$form;
+  $params['form_state'] = &$form_state;
+  misery('form_validate', $params);
+}
+
+/**
+ * Do misery.
+ * $type indicates where this is being called.
+ * $params is an array of references to make available in the hook
+ * implementation.
+ */
+function misery($type, &$params = array()) {
+  $endures_misery = (!user_access('administer misery') && manifest(array('misery' => TRUE)));
+  if ($endures_misery) {
+    $handlers = misery_get_handlers();
+    foreach ($handlers as $handler => $handler_data) {
+      if ($handler_data['#type'] == $type) {
+        $chance = variable_get('misery_' . $handler . '_chance', $handler_data['#default_chance']);
+        if (misery_random_task($chance)) {
+          // Perform this misery.
+          module_invoke($handler_data['#module'], 'misery_perform', $handler, $type, $params);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Check whether we should randomly execute the misery handler.
+ */
+function misery_random_task($chance) {
+  if ($chance) {
+    $random_number = rand(0, 100);
+    if ($chance >= $random_number) {
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+/**
+ * Implements hook_misery_perform().
+ */
+function misery_misery_perform($handler, $type, $params = array()) {
+  switch ($handler) {
+    case 'delay':
+      $min = variable_get('misery_delay_min', 0);
+      $max = variable_get('misery_delay_max', 5);
+      $delay = rand($min, $max);
+      sleep($delay);
+      break;
+
+    case 'white_screen':
+      module_invoke_all('exit');
+      exit;
+      // Implicit break.
+
+    case 'wrong_page':
+      $paths = explode("\n", trim(variable_get('misery_wrong_page_list', '')));
+      $key = array_rand($paths);
+      $path = trim($paths[$key]);
+      if ($path) {
+        drupal_goto($path);
+      }
+      break;
+
+    case 'random_node':
+      misery_random_node();
+      // Implicit break.
+
+    case 'access_denied':
+      // In Drupal 6 we handled this with a custom func to prevent watchdog notices, but it is unclear how to do that in D7.
+      //misery_access_denied();
+      drupal_access_denied();
+      exit;
+      // Implicit break.
+
+    case 'not_found':
+      // In Drupal 6 we handled this with a custom func to prevent watchdog notices, but it is unclear how to do that in D7.
+      //misery_not_found();
+      drupal_not_found();
+      exit;
+      // Implicit break.
+
+    case 'site_offline':
+      drupal_site_offline();
+      exit;
+      // Implicit break.
+
+    case 'form_submit':
+      drupal_goto($_GET['q']);
+      // Implicit break.
+
+    case 'crash_ie6':
+      drupal_add_js('for (x in document.write) { document.write(x); }', 'inline');
+      break;
+
+    case 'spam':
+      if (isset($params['node']->content['body'][0]['#markup'])) {
+        $params['node']->content['body'][0]['#markup'] = misery_spam_node($params['node']->content['body'][0]['#markup']);
+      }
+      break;
+
+    case 'logout':
+      module_load_include('inc', 'user', 'user.pages');
+      user_logout();
+      break;
+
+  }
+}
+
+/**
+ * Go to a random node.
+ */
+function misery_random_node() {
+  $query = db_select('node', 'n');
+  $query
+     ->fields('n', array('nid'))
+     ->orderRandom()
+     ->range(0, 1)
+     ->addTag('node_access');
+
+  $result = $query->execute();
+  $nid = $result->fetchField();
+  drupal_goto('node/' . $nid);
+}
+
+/**
+ * Replace all words not part of tags with a given spam word.
+ */
+function misery_spam_node($content) {
+  $regex_notag = '/(?<=^|>)([^><]+?)(?=<|$)/';
+  $regex_words = '/\b([a-zA-Z0-9\-_]+)\b/i';
+
+  return preg_replace_callback(
+    $regex_notag,
+    create_function(
+      '$matches',
+      'return preg_replace("' . $regex_words . '", "' . check_plain(variable_get('misery_spam_text', 'Spam')) . '", $matches[0]);'
+    ),
+    $content);
+}
+
+/**
+ * Implements hook_manifest_config().
+ */
+function misery_manifest_config($op, $manifest) {
+  switch ($op) {
+    case 'fields':
+      // Only integer fields are allowed here.
+      return array(
+        'misery',
+      );
+      break;
+
+    case 'form':
+      if (user_access('administer misery')) {
+        $form['misery'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('Misery'),
+        );
+        $form['misery']['misery'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('Misery'),
+          '#default_value' => isset($manifest->config['misery'][0]) ? $manifest->config['misery'][0] : 0,
+          '#description' => t('Users in this manifest endure misery.'),
+        );
+      }
+      else {
+        $form['misery'] = array(
+          '#type' => 'value',
+          '#value' => isset($manifest->config['misery'][0]) ? $manifest->config['misery'][0] : 0,
+        );
+      }
+      return $form;
+      // Implicit break..
+
+  }
+}

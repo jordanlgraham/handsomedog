@@ -1,0 +1,38 @@
+<?php
+
+/**
+ * @file
+ * Misery module install file.
+ */
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function misery_uninstall() {
+
+  variable_del('misery_access_denied_chance');
+  variable_del('misery_crash_ie6_chance');
+  variable_del('misery_delay_chance');
+  variable_del('misery_form_submit_chance');
+  variable_del('misery_logout_chance');
+  variable_del('misery_not_found_chance');
+  variable_del('misery_random_node_chance');
+  variable_del('misery_site_offline_chance');
+  variable_del('misery_spam_chance');
+  variable_del('misery_white_screen_chance');
+  variable_del('misery_wrong_page_chance');
+
+  variable_del('misery_roles');
+  variable_del('misery_spam_text');
+  variable_del('misery_delay_min');
+  variable_del('misery_delay_max');
+  variable_del('misery_wrong_page_list');
+}
+
+/**
+ * Implements of hook_update_last_removed().
+ */
+function misery_update_last_removed() {
+  // Removed because code only runs in Drupal 6.
+  return 6201;
+}
