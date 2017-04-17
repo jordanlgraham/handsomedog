@@ -1,0 +1,41 @@
+mysql:
+  image: mysql:5.7.11
+  command: sh /stack/localdb-run.sh
+  environment:
+    MYSQL_ROOT_PASSWORD: negus
+    MYSQL_DATABASE: drupal
+  volumes:
+    -  ./conf/mysql/conf.d:/etc/mysql/conf.d
+    -  ./mysql-data/:/var/lib/mysql:rw
+    -  ./mysql-dump/:/var/lib/mysql-dump
+    -  ./stack:/stack:rw
+  ports:
+    - "3306"
+
+memcached:
+  image: memcached
+  entrypoint: /entrypoint.sh memcached -m 128 -I 2M
+  ports:
+    - "11211"
+
+web:
+  build: .
+  environment:
+    DRUPAL_MYSQL_HOST: mysql
+    DRUPAL_MYSQL_PORT: 3306
+    DRUPAL_MYSQL_DB: drupal
+    DRUPAL_MYSQL_USER: root
+    DRUPAL_MYSQL_PASS: negus
+    DRUPAL_BASE_URL: docker.vm
+    XDEBUG_CONFIG: "idekey=PHPSTORM remote_host=172.17.0.1 remote_port=9000"
+  ports:
+    - "80:80"
+    - "8022:22"
+  volumes:
+    - ./docroot:/var/www/html
+    - ./app/default/files:/var/www/html/sites/default/files
+    - ./app/default/files-private:/var/www/html/sites/default/files-private
+    - ./app/config:/var/www/html/sites/default/config
+  links:
+    - mysql
+    - memcached
