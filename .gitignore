@@ -8,3 +8,4 @@ local.db.inc
 /docroot/sites/default/local.db.inc
 acquia-files
 /mysql-data
+mysql-dump/default.sql
