@@ -228,7 +228,7 @@ function manifest_form_user_profile_form_alter(&$form, &$form_state) {
 /**
  * Implements hook_user_update().
  */
-function hook_user_update(&$edit, $account, $category) {
+function manifest_user_update(&$edit, $account, $category) {
   if (!empty($edit['manifests'])) {
     if (is_string($edit['manifests'])) {
       $edit['manifests'] = array($edit['manifests'] => $edit['manifests']);
@@ -334,3 +334,13 @@ function manifest_action(&$user, $context) {
 }
 
 // @todo Make a page that lists users.
+
+/**
+ * Implementation of hook_views_api().
+ */
+function manifest_views_api() {
+  return array(
+    'api'  => 3,
+    'path' => drupal_get_path('module', 'manifest') . '/views',
+  );
+}

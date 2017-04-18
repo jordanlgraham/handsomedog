@@ -15,7 +15,7 @@ function manifest_admin_list() {
   $manifests = manifest_load_multiple();
 
   if (!$manifests) {
-    $output['no-manifests'] = t('There are currently no manifests configured.');
+    $output = t('There are currently no manifests configured.');
   }
   else {
     $rows = array();
@@ -211,7 +211,7 @@ function manifest_admin_delete($form, $form_state, $manifest) {
   );
   return confirm_form($form,
     t('Are you sure you want to delete the %manifest manifest?', array('%manifest' => manifest_title($manifest))),
-    $_GET['destination'] ? $_GET['destination'] : 'admin/people/manifest',
+    'admin/people/manifest',
     t('This action cannot be undone.'),
     t('Delete'), t('Cancel'));
 }

@@ -1,4 +1,4 @@
-# Including sites/default/settings.php, as the dockerized version contains no sensitive information
+# Including sites/default/settings.php as the docker-ized version contains no sensitive information
 # Ignore configuration files that may contain sensitive information.
 # sites/*/settings*.php
 

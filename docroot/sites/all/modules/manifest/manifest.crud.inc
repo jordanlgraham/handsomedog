@@ -273,6 +273,7 @@ function manifest_query_execute($table, $op = 'load', $conditions = array(), $se
  *   An array of loaded manifests.
  */
 function manifest($config = NULL, $account = NULL) {
+  $check_ip = FALSE;
   if (is_null($account)) {
     global $user;
     $account = $user;
