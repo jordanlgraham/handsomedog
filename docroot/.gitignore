@@ -1,6 +1,5 @@
-# Including sites/default/settings.php as the docker-ized version contains no sensitive information
 # Ignore configuration files that may contain sensitive information.
-# sites/*/settings*.php
+sites/*/settings*.php
 
 # Ignore paths that contain user-generated content.
 sites/*/files
